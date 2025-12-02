@@ -410,6 +410,18 @@ def spectral_envelope_match(
 
 # ----------------- FILE LISTING -----------------
 
+def _dedupe_paths(paths):
+    seen = set()
+    out = []
+    for p in paths:
+        key = os.path.normcase(os.path.abspath(p))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    return out
+
+
 def list_wav_files(folder: str, recursive: bool = True):
     if not folder or not os.path.isdir(folder):
         return []
@@ -417,6 +429,7 @@ def list_wav_files(folder: str, recursive: bool = True):
     files = glob.glob(os.path.join(folder, pattern), recursive=recursive)
     files += glob.glob(os.path.join(folder, pattern.upper()), recursive=recursive)
     files = [f for f in files if os.path.isfile(f)]
+    files = _dedupe_paths(files)
     files.sort(key=lambda p: p.lower())
     return files
 
@@ -427,6 +440,7 @@ def list_audio_files(folder: str):
         files += glob.glob(os.path.join(folder, f"*{ext}"))
         files += glob.glob(os.path.join(folder, f"*{ext.upper()}"))
     files = [f for f in files if os.path.isfile(f)]
+    files = _dedupe_paths(files)
     files.sort(key=lambda p: p.lower())
     return files
 
@@ -495,7 +509,7 @@ class AudioWorker(QObject):
         self._mipmap_cache[wt_path] = mipmaps
         return mipmaps
 
-    # NEW: generates 4 outputs per input, same CAPA number
+    # Generates 4 outputs per input, same CAPA number
     def _process_one(self, src_file: str, out_dir: str, wavetable_files: list, rng: np.random.Generator, capa_num: int):
         self.log.emit(f"Fuente: {os.path.basename(src_file)} | CAPA{capa_num}")
         y, sr = load_mono(src_file)
@@ -974,3 +988,4 @@ if __name__ == "__main__":
     w = MainWindow()
     w.show()
     sys.exit(app.exec())
+
